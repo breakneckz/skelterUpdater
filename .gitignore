@@ -1,0 +1,16 @@
+# Сборки лаунчера
+launcher/bin/
+launcher/obj/
+
+# Архивы игры — они живут в GitHub Releases, а не в репозитории
+dist/
+*.zip
+*.rar
+*.zip.part
+
+# Состояние установки у игрока
+installed.json
+updates/
+
+.vs/
+*.user
