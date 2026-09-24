@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Публикует новую версию Skelter Arena: пакует сборку, заливает релиз на GitHub
     и обновляет version.json, по которому лаунчер видит обновление.
@@ -24,8 +24,9 @@ param(
     # Лаунчер снесёт содержимое папки игры перед распаковкой.
     [switch]$CleanInstall,
 
-    # Собрать и приложить к релизу свежий SkelterLauncher.exe.
-    [switch]$WithLauncher,
+    # Не прикладывать лаунчер к релизу. По умолчанию он собирается и заливается всегда,
+    # чтобы ссылка /releases/latest/download/SkelterLauncher.exe никогда не отдавала 404.
+    [switch]$NoLauncher,
 
     # Спаковать и посчитать хеш, но ничего не заливать.
     [switch]$DryRun
@@ -103,11 +104,13 @@ if ($zipInfo.Length -gt 2GB) {
     throw "Архив больше 2 ГБ — GitHub Releases такой файл не примет."
 }
 
-# ---------------------------------------------------------------- лаунчер (опционально)
+# ---------------------------------------------------------------- лаунчер
 
 $assets = @($ZipPath)
 
-if ($WithLauncher) {
+if ($NoLauncher) {
+    Write-Warning "Лаунчер не прикладывается: ссылка /releases/latest/download/SkelterLauncher.exe после этого релиза отдаст 404."
+} else {
     Write-Step "Собираем SkelterLauncher.exe"
 
     $dotnet = Resolve-Tool 'dotnet' @("C:\Program Files\dotnet\dotnet.exe")
@@ -117,7 +120,10 @@ if ($WithLauncher) {
     & $dotnet publish (Join-Path $RepoRoot 'launcher\SkelterLauncher.csproj') -c Release -o $publishDir --nologo
     if ($LASTEXITCODE -ne 0) { throw "Сборка лаунчера упала с кодом $LASTEXITCODE" }
 
-    $assets += (Join-Path $publishDir 'SkelterLauncher.exe')
+    $launcherExe = Join-Path $publishDir 'SkelterLauncher.exe'
+    if (-not (Test-Path $launcherExe)) { throw "Лаунчер не собрался: нет $launcherExe" }
+
+    $assets += $launcherExe
 }
 
 # ---------------------------------------------------------------- version.json
@@ -137,7 +143,10 @@ $manifest = [ordered]@{
 
 $manifestPath = Join-Path $RepoRoot 'version.json'
 $json = $manifest | ConvertTo-Json -Depth 3
-Set-Content -Path $manifestPath -Value $json -Encoding utf8
+
+# Строго без BOM: Set-Content -Encoding utf8 в Windows PowerShell 5.1 его добавляет,
+# а BOM в начале JSON ломает разбор на стороне лаунчера.
+[System.IO.File]::WriteAllText($manifestPath, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 
 Write-Host $json
 

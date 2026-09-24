@@ -29,7 +29,10 @@ internal sealed class UpdateManifest
 
     public static UpdateManifest Parse(string json)
     {
-        var manifest = JsonSerializer.Deserialize<UpdateManifest>(json, Options)
+        // Редактор или скрипт публикации могли сохранить манифест с BOM — System.Text.Json на нём падает.
+        var clean = json.TrimStart('\uFEFF', '\u200B').Trim();
+
+        var manifest = JsonSerializer.Deserialize<UpdateManifest>(clean, Options)
             ?? throw new InvalidDataException("version.json пустой");
 
         if (string.IsNullOrWhiteSpace(manifest.Version))
