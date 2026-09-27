@@ -3,7 +3,11 @@ using System.Text.Json.Serialization;
 
 namespace SkelterLauncher;
 
-/// <summary>Состояние установки, лежит в installed.json рядом с лаунчером.</summary>
+/// <summary>
+/// Состояние установки: %LocalAppData%\SkelterArena\installed.json. Не рядом с лаунчером —
+/// иначе копия лаунчера в папке игры (на неё смотрит ярлык) и исходный exe считали бы
+/// каждая свою версию и качали игру заново.
+/// </summary>
 internal sealed class LocalState
 {
     [JsonPropertyName("version")] public string? Version { get; set; }
@@ -11,6 +15,9 @@ internal sealed class LocalState
 
     /// <summary>Выставляется на время распаковки. Если при старте true — прошлая установка оборвалась.</summary>
     [JsonPropertyName("updateInProgress")] public bool UpdateInProgress { get; set; }
+
+    /// <summary>Галочка «ярлык на рабочем столе», пока игра ещё не поставлена.</summary>
+    [JsonPropertyName("desktopShortcut")] public bool DesktopShortcut { get; set; } = true;
 
     [JsonIgnore] public string StatePath { get; private set; } = "";
 
@@ -22,13 +29,21 @@ internal sealed class LocalState
 
     public static LocalState Load(string launcherDir)
     {
-        var path = Path.Combine(launcherDir, "installed.json");
+        var stateDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Config.StateFolderName);
+        var path = Path.Combine(stateDir, "installed.json");
+
+        // Лаунчер 1.0 хранил installed.json рядом с собой — подхватываем, чтобы не качать игру заново.
+        var legacyPath = Path.Combine(launcherDir, "installed.json");
+        var source = File.Exists(path) ? path : File.Exists(legacyPath) ? legacyPath : null;
+
         LocalState state;
 
         try
         {
-            state = File.Exists(path)
-                ? JsonSerializer.Deserialize<LocalState>(File.ReadAllText(path), Options) ?? new LocalState()
+            state = source is not null
+                ? JsonSerializer.Deserialize<LocalState>(File.ReadAllText(source), Options) ?? new LocalState()
                 : new LocalState();
         }
         catch
@@ -41,6 +56,18 @@ internal sealed class LocalState
 
         if (string.IsNullOrWhiteSpace(state.InstallPath))
             state.InstallPath = ResolveDefaultInstallPath(launcherDir);
+
+        if (source == legacyPath)
+        {
+            try
+            {
+                state.Save();
+            }
+            catch
+            {
+                // Не перенесли — перенесём при следующем сохранении.
+            }
+        }
 
         return state;
     }
@@ -63,6 +90,7 @@ internal sealed class LocalState
 
     public void Save()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(StatePath)!);
         var json = JsonSerializer.Serialize(this, Options);
         var tmp = StatePath + ".tmp";
         File.WriteAllText(tmp, json);

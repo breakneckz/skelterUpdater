@@ -15,5 +15,11 @@ internal static class Config
     /// <summary>Папка установки по умолчанию, если рядом с лаунчером игры ещё нет.</summary>
     public const string DefaultInstallFolderName = "Skelter Arena";
 
-    public const string UserAgent = "SkelterLauncher/1.0 (+https://github.com/breakneckz/skelterUpdater)";
+    /// <summary>Под этим именем копия лаунчера кладётся в папку игры — на неё смотрит ярлык.</summary>
+    public const string LauncherFileName = "SkelterLauncher.exe";
+
+    /// <summary>Папка в %LocalAppData% с installed.json — общая для всех копий лаунчера.</summary>
+    public const string StateFolderName = "SkelterArena";
+
+    public const string UserAgent = "SkelterLauncher/1.1 (+https://github.com/breakneckz/skelterUpdater)";
 }

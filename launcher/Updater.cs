@@ -192,7 +192,10 @@ internal sealed class Updater
         // Обновление поверх существующей установки занимает только разницу в размерах.
         EnsureFreeSpace(installRoot, plan.Sum(p => GrowthOf(p.Entry, p.TargetPath)));
 
-        var protectedPaths = ProtectedPaths(state);
+        var protectedPaths = ProtectedPaths(state, installRoot);
+
+        // Если лаунчер живёт в папке игры, его кеш загрузок тоже там — архив, который сейчас ставим, не трогаем.
+        var cacheDir = Path.GetFullPath(Path.GetDirectoryName(zipPath)!);
 
         // Флаг на время распаковки: если процесс убьют посередине, при следующем старте
         // мы это увидим и поставим версию заново вместо запуска битой игры.
@@ -200,7 +203,7 @@ internal sealed class Updater
         state.Save();
 
         if (manifest.CleanInstall)
-            CleanInstallDir(installRoot, protectedPaths);
+            CleanInstallDir(installRoot, protectedPaths, cacheDir);
 
         long done = 0;
 
@@ -208,7 +211,7 @@ internal sealed class Updater
         {
             ct.ThrowIfCancellationRequested();
 
-            // Себя и свой installed.json не перезаписываем — лаунчер сейчас запущен.
+            // Себя и копию лаунчера для ярлыка не перезаписываем — лаунчер сейчас запущен.
             if (protectedPaths.Contains(targetPath))
             {
                 done += entry.Length;
@@ -263,9 +266,12 @@ internal sealed class Updater
     }
 
     /// <summary>Файлы, которые нельзя трогать при распаковке и очистке.</summary>
-    private static HashSet<string> ProtectedPaths(LocalState state)
+    private static HashSet<string> ProtectedPaths(LocalState state, string installRoot)
     {
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.Combine(installRoot, Config.LauncherFileName),
+        };
 
         var self = Environment.ProcessPath;
         if (!string.IsNullOrEmpty(self))
@@ -278,12 +284,14 @@ internal sealed class Updater
     }
 
     /// <summary>Сносит содержимое папки установки, кроме защищённых файлов.</summary>
-    private static void CleanInstallDir(string installRoot, HashSet<string> protectedPaths)
+    private static void CleanInstallDir(string installRoot, HashSet<string> protectedPaths, string cacheDir)
     {
+        var cachePrefix = Path.TrimEndingDirectorySeparator(cacheDir) + Path.DirectorySeparatorChar;
+
         foreach (var file in Directory.EnumerateFiles(installRoot, "*", SearchOption.AllDirectories))
         {
             var full = Path.GetFullPath(file);
-            if (protectedPaths.Contains(full))
+            if (protectedPaths.Contains(full) || full.StartsWith(cachePrefix, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             try

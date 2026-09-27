@@ -13,7 +13,7 @@
     <AssemblyTitle>Skelter Arena Launcher</AssemblyTitle>
     <Product>Skelter Arena</Product>
     <Company>DanCygan</Company>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
 
     <!-- Один самодостаточный .exe: игроку не нужен установленный .NET -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
