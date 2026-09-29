@@ -1,10 +1,10 @@
 {
-    "version":  "1.0.1",
-    "releaseDate":  "2026-09-25",
-    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.1/Skelter-Arena-1.0.1.zip",
-    "sha256":  "3697f558e02c40c2d47f3e03a9adf98d504170b51ba651f6b80dace016ea4b2f",
-    "size":  356378933,
+    "version":  "1.0.2",
+    "releaseDate":  "2026-09-29",
+    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.2/Skelter-Arena-1.0.2.zip",
+    "sha256":  "c05973c8986c286797452a25e1f7650f5abf108726e975a7543a4b208327a73f",
+    "size":  443246042,
     "executable":  "Skelter Arena.exe",
     "cleanInstall":  false,
-    "notes":  "Патч Нурик Мурик Русик Мусик"
+    "notes":  "Глобал апдейт"
 }
