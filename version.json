@@ -1,10 +1,10 @@
 {
-    "version":  "1.0.31",
-    "releaseDate":  "2026-10-01",
-    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.31/Skelter-Arena-1.0.31.zip",
-    "sha256":  "b55e3e0b738793ed440f148ab3de206794fe2ebd53d7b4c945b80d99f539aecc",
-    "size":  523329899,
+    "version":  "1.0.33",
+    "releaseDate":  "2026-10-03",
+    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.33/Skelter-Arena-1.0.33.zip",
+    "sha256":  "bca693e1e144877007c38e8d3a53c68458cb8ccfeee77470b3237aa29ad7a665",
+    "size":  560684732,
     "executable":  "Skelter Arena.exe",
     "cleanInstall":  false,
-    "notes":  "новый перс, нерф токсабьюзер, багфиксы и улучшения"
+    "notes":  "2 новых персонажа и фиксы"
 }
