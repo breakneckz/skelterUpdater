@@ -1,10 +1,279 @@
 {
-    "version":  "1.0.33",
+    "version":  "1.0.35",
     "releaseDate":  "2026-10-03",
-    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.33/Skelter-Arena-1.0.33.zip",
-    "sha256":  "bca693e1e144877007c38e8d3a53c68458cb8ccfeee77470b3237aa29ad7a665",
-    "size":  560684732,
+    "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.35/Skelter-Arena-1.0.35.zip",
+    "sha256":  "dc4e789f394239d779be5fbeb6963eb03da4a0b867c3a7182fd42ad7d7f6e2f5",
+    "size":  500572688,
     "executable":  "Skelter Arena.exe",
     "cleanInstall":  false,
-    "notes":  "2 новых персонажа и фиксы"
+    "notes":  "2 new heroes, bugfixes",
+    "notesRu":  "2 новых героя, багфиксы",
+    "patches":  [
+                    {
+                        "from":  "1.0.33",
+                        "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.35/Skelter-Arena-1.0.33-to-1.0.35.hdiff",
+                        "sha256":  "b023b2ebc85b92cfac9a180e74018079eaa2baa1f3226562afc385beff885101",
+                        "size":  28832,
+                        "files":  [
+                                      {
+                                          "path":  "Skelter Arena_Data/boot.config",
+                                          "sha256":  "1eeb9e7d540c2a0514e550c6bf325d5fe59cf1a873051900087e17e03b13747a",
+                                          "size":  156
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Managed/Assembly-CSharp.dll",
+                                          "sha256":  "ca933db7ddac8f74f822b220ed0b35e62b6f2716677b88e91d91604e64a9371a",
+                                          "size":  1895424
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Plugins/x86_64/lib_burst_generated.dll",
+                                          "sha256":  "b1ce6b5f71f605a856aea7d6c2bccda87dd12a09e12624c9bde0bdd912b07442",
+                                          "size":  1176064
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.assets",
+                                          "sha256":  "ec6a221179a971a3b889e029157554b18b2accd1df910470ff5343c2020e9742",
+                                          "size":  178107160
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.assets",
+                                          "sha256":  "3a90d10f483412e3b9c23c02186957146233a1b29ad182fbf75a3c6353d9fbaf",
+                                          "size":  10005904
+                                      }
+                                  ],
+                        "remove":  [
+                                       "installed.json",
+                                       "SkelterLauncher (1).exe"
+                                   ]
+                    },
+                    {
+                        "from":  "1.0.31",
+                        "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.35/Skelter-Arena-1.0.31-to-1.0.35.hdiff",
+                        "sha256":  "a82e031db5e88cf0e0d62211f0c3325e08cfded5d9e7be80db969a516e83b519",
+                        "size":  34749364,
+                        "files":  [
+                                      {
+                                          "path":  "Skelter Arena_Data/boot.config",
+                                          "sha256":  "1eeb9e7d540c2a0514e550c6bf325d5fe59cf1a873051900087e17e03b13747a",
+                                          "size":  156
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/globalgamemanagers",
+                                          "sha256":  "4b7934f0d2e627bc100ee4fcea34c3b0d1f8645e3b32e12cbc06f9a0c9a77838",
+                                          "size":  690900
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/globalgamemanagers.assets",
+                                          "sha256":  "71e625f461c5e4f49222f29e3d64a8ae52aade5d3053fd546c15a8009c5e1e86",
+                                          "size":  1707464
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level0",
+                                          "sha256":  "385cb390d14d250bf8785df392ea684c18ca2ab31415f136257eb488e2e1123a",
+                                          "size":  8068
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level1",
+                                          "sha256":  "af4771fbce89ebfbbe0b0f1ec307feb038addcb806988bebd63d2a6af8312fb4",
+                                          "size":  702088
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level2",
+                                          "sha256":  "dd1851664d64627b73eed9411ea389eb10a0331a8a7f36783b786dbdd8ac0115",
+                                          "size":  1142504
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level3",
+                                          "sha256":  "e47835d58c9cc9dc1275995c2a690615ad23d902fd8fb821c511e143b4fe1179",
+                                          "size":  1868872
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level4",
+                                          "sha256":  "6151bb0f14eb95f3621d4223ced7988c99cf408c996048470842d1aa88be14d0",
+                                          "size":  792680
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Managed/Assembly-CSharp.dll",
+                                          "sha256":  "ca933db7ddac8f74f822b220ed0b35e62b6f2716677b88e91d91604e64a9371a",
+                                          "size":  1895424
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Plugins/x86_64/lib_burst_generated.dll",
+                                          "sha256":  "b1ce6b5f71f605a856aea7d6c2bccda87dd12a09e12624c9bde0bdd912b07442",
+                                          "size":  1176064
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.assets",
+                                          "sha256":  "ec6a221179a971a3b889e029157554b18b2accd1df910470ff5343c2020e9742",
+                                          "size":  178107160
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.assets.resS",
+                                          "sha256":  "65d91a2feab4049d61a3ff40c04b6d9046efe6beddc5070ab23d172b6f79d3b2",
+                                          "size":  538806176
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.resource",
+                                          "sha256":  "5643b4ce57f11b138ff20b9e14cf6d0db0162a2a6b11980b6c360c06cbe56c5b",
+                                          "size":  23454720
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.assets",
+                                          "sha256":  "3a90d10f483412e3b9c23c02186957146233a1b29ad182fbf75a3c6353d9fbaf",
+                                          "size":  10005904
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.assets.resS",
+                                          "sha256":  "105c18bd31b254bf59c53a8350e7bd42b098803d7917cb6f07365394abc2e42f",
+                                          "size":  41994608
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.resource",
+                                          "sha256":  "0d9860740fdb19277bc314898bdafa5df92fb9cb5ce729f2b6a7bb6c207bbead",
+                                          "size":  82076032
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets1.assets",
+                                          "sha256":  "8cf6e5a1c0b79f9919c2ed16843737901eb19db3eb639c74ff91a3c089d119d3",
+                                          "size":  58286624
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets2.assets",
+                                          "sha256":  "0fa8c3ae0028d747780b9447ec97be9e8e94f6e10cae759c396cc1f62940b7e0",
+                                          "size":  25636
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets3.assets",
+                                          "sha256":  "b5f9a6f718fab47f79195ce0dad80709757fa9dbcbbb7955925f5fc8a835b6a1",
+                                          "size":  69648
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets4.assets",
+                                          "sha256":  "c3d719236ac6a1c149d1bd8779b649ddd90e501b54cbc0259e6b36560041c12e",
+                                          "size":  14238928
+                                      }
+                                  ],
+                        "remove":  [
+                                       "installed.json",
+                                       "SkelterLauncher (1).exe"
+                                   ]
+                    },
+                    {
+                        "from":  "1.0.3",
+                        "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.35/Skelter-Arena-1.0.3-to-1.0.35.hdiff",
+                        "sha256":  "c2cba724d7ab8f2638e547e719bf398d3e36c9f5cafae157c59274cbcf16dadc",
+                        "size":  52246189,
+                        "files":  [
+                                      {
+                                          "path":  "Skelter Arena_Data/boot.config",
+                                          "sha256":  "1eeb9e7d540c2a0514e550c6bf325d5fe59cf1a873051900087e17e03b13747a",
+                                          "size":  156
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/globalgamemanagers",
+                                          "sha256":  "4b7934f0d2e627bc100ee4fcea34c3b0d1f8645e3b32e12cbc06f9a0c9a77838",
+                                          "size":  690900
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/globalgamemanagers.assets",
+                                          "sha256":  "71e625f461c5e4f49222f29e3d64a8ae52aade5d3053fd546c15a8009c5e1e86",
+                                          "size":  1707464
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level0",
+                                          "sha256":  "385cb390d14d250bf8785df392ea684c18ca2ab31415f136257eb488e2e1123a",
+                                          "size":  8068
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level1",
+                                          "sha256":  "af4771fbce89ebfbbe0b0f1ec307feb038addcb806988bebd63d2a6af8312fb4",
+                                          "size":  702088
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level2",
+                                          "sha256":  "dd1851664d64627b73eed9411ea389eb10a0331a8a7f36783b786dbdd8ac0115",
+                                          "size":  1142504
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level3",
+                                          "sha256":  "e47835d58c9cc9dc1275995c2a690615ad23d902fd8fb821c511e143b4fe1179",
+                                          "size":  1868872
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/level4",
+                                          "sha256":  "6151bb0f14eb95f3621d4223ced7988c99cf408c996048470842d1aa88be14d0",
+                                          "size":  792680
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Managed/Assembly-CSharp.dll",
+                                          "sha256":  "ca933db7ddac8f74f822b220ed0b35e62b6f2716677b88e91d91604e64a9371a",
+                                          "size":  1895424
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/Plugins/x86_64/lib_burst_generated.dll",
+                                          "sha256":  "b1ce6b5f71f605a856aea7d6c2bccda87dd12a09e12624c9bde0bdd912b07442",
+                                          "size":  1176064
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.assets",
+                                          "sha256":  "ec6a221179a971a3b889e029157554b18b2accd1df910470ff5343c2020e9742",
+                                          "size":  178107160
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.assets.resS",
+                                          "sha256":  "65d91a2feab4049d61a3ff40c04b6d9046efe6beddc5070ab23d172b6f79d3b2",
+                                          "size":  538806176
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/resources.resource",
+                                          "sha256":  "5643b4ce57f11b138ff20b9e14cf6d0db0162a2a6b11980b6c360c06cbe56c5b",
+                                          "size":  23454720
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.assets",
+                                          "sha256":  "3a90d10f483412e3b9c23c02186957146233a1b29ad182fbf75a3c6353d9fbaf",
+                                          "size":  10005904
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.assets.resS",
+                                          "sha256":  "105c18bd31b254bf59c53a8350e7bd42b098803d7917cb6f07365394abc2e42f",
+                                          "size":  41994608
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets0.resource",
+                                          "sha256":  "0d9860740fdb19277bc314898bdafa5df92fb9cb5ce729f2b6a7bb6c207bbead",
+                                          "size":  82076032
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets1.assets",
+                                          "sha256":  "8cf6e5a1c0b79f9919c2ed16843737901eb19db3eb639c74ff91a3c089d119d3",
+                                          "size":  58286624
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets2.assets",
+                                          "sha256":  "0fa8c3ae0028d747780b9447ec97be9e8e94f6e10cae759c396cc1f62940b7e0",
+                                          "size":  25636
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets3.assets",
+                                          "sha256":  "b5f9a6f718fab47f79195ce0dad80709757fa9dbcbbb7955925f5fc8a835b6a1",
+                                          "size":  69648
+                                      },
+                                      {
+                                          "path":  "Skelter Arena_Data/sharedassets4.assets",
+                                          "sha256":  "c3d719236ac6a1c149d1bd8779b649ddd90e501b54cbc0259e6b36560041c12e",
+                                          "size":  14238928
+                                      }
+                                  ],
+                        "remove":  [
+
+                                   ]
+                    }
+                ],
+    "launcher":  {
+                     "version":  "1.2.0",
+                     "url":  "https://github.com/breakneckz/skelterUpdater/releases/download/v1.0.35/SkelterLauncher.exe",
+                     "sha256":  "8ccbeade410b054c64bc79218b51ea24529765846d9675be7558ff726abb1f3c",
+                     "size":  66149554
+                 }
 }
