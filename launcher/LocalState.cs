@@ -19,6 +19,9 @@ internal sealed class LocalState
     /// <summary>Галочка «ярлык на рабочем столе», пока игра ещё не поставлена.</summary>
     [JsonPropertyName("desktopShortcut")] public bool DesktopShortcut { get; set; } = true;
 
+    /// <summary>Язык интерфейса: "en" (по умолчанию) или "ru".</summary>
+    [JsonPropertyName("language")] public string? Language { get; set; }
+
     [JsonIgnore] public string StatePath { get; private set; } = "";
 
     private static readonly JsonSerializerOptions Options = new()
@@ -29,10 +32,7 @@ internal sealed class LocalState
 
     public static LocalState Load(string launcherDir)
     {
-        var stateDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            Config.StateFolderName);
-        var path = Path.Combine(stateDir, "installed.json");
+        var path = Path.Combine(Config.StateDir, "installed.json");
 
         // Лаунчер 1.0 хранил installed.json рядом с собой — подхватываем, чтобы не качать игру заново.
         var legacyPath = Path.Combine(launcherDir, "installed.json");

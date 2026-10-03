@@ -28,6 +28,10 @@ internal sealed class Updater
 
     public async Task<UpdateManifest> FetchManifestAsync(CancellationToken ct)
     {
+        // Песочница (SKELTER_LAUNCHER_DEV_DIR): манифест — локальный файл.
+        if (!Config.ManifestUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return UpdateManifest.Parse(await File.ReadAllTextAsync(Config.ManifestUrl, ct).ConfigureAwait(false));
+
         // raw.githubusercontent кеширует ответы на CDN — добиваем запрос уникальным параметром.
         var url = $"{Config.ManifestUrl}?nocache={Guid.NewGuid():N}";
 
@@ -47,9 +51,9 @@ internal sealed class Updater
     // ---------------------------------------------------------------- скачивание
 
     /// <summary>
-    /// Качает архив в dest.part с докачкой при обрыве, затем переименовывает в dest.
+    /// Качает файл в dest.part с докачкой при обрыве, затем переименовывает в dest.
     /// </summary>
-    public async Task DownloadAsync(UpdateManifest manifest, string dest, IProgress<ProgressInfo> progress, CancellationToken ct)
+    public async Task DownloadAsync(IRemoteFile file, string dest, IProgress<ProgressInfo> progress, CancellationToken ct)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
 
@@ -57,13 +61,13 @@ internal sealed class Updater
         long resumeFrom = File.Exists(part) ? new FileInfo(part).Length : 0;
 
         // Если прошлый .part больше заявленного размера — он мусорный.
-        if (manifest.Size > 0 && resumeFrom > manifest.Size)
+        if (file.Size > 0 && resumeFrom > file.Size)
         {
             File.Delete(part);
             resumeFrom = 0;
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, manifest.Url);
+        using var request = new HttpRequestMessage(HttpMethod.Get, file.Url);
         if (resumeFrom > 0)
             request.Headers.Range = new RangeHeaderValue(resumeFrom, null);
 
@@ -84,8 +88,8 @@ internal sealed class Updater
 
         response.EnsureSuccessStatusCode();
 
-        long total = manifest.Size > 0
-            ? manifest.Size
+        long total = file.Size > 0
+            ? file.Size
             : (response.Content.Headers.ContentLength ?? 0) + resumeFrom;
 
         EnsureFreeSpace(dest, total - resumeFrom);
@@ -178,13 +182,7 @@ internal sealed class Updater
             if (string.IsNullOrWhiteSpace(relative))
                 continue;
 
-            var targetPath = Path.GetFullPath(Path.Combine(installRoot, relative));
-
-            // Zip slip: запись не должна вылезать за пределы папки установки.
-            if (!targetPath.StartsWith(installRoot, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"Архив содержит недопустимый путь: {entry.FullName}");
-
-            plan.Add((entry, targetPath));
+            plan.Add((entry, ResolveInside(installRoot, relative)));
         }
 
         long total = plan.Sum(p => p.Entry.Length);
@@ -196,6 +194,7 @@ internal sealed class Updater
 
         // Если лаунчер живёт в папке игры, его кеш загрузок тоже там — архив, который сейчас ставим, не трогаем.
         var cacheDir = Path.GetFullPath(Path.GetDirectoryName(zipPath)!);
+        var stagingDir = Path.Combine(installRoot, Patcher.StagingFolderName);
 
         // Флаг на время распаковки: если процесс убьют посередине, при следующем старте
         // мы это увидим и поставим версию заново вместо запуска битой игры.
@@ -204,6 +203,8 @@ internal sealed class Updater
 
         if (manifest.CleanInstall)
             CleanInstallDir(installRoot, protectedPaths, cacheDir);
+
+        Patcher.TryDeleteDirectory(stagingDir);
 
         long done = 0;
 
@@ -265,8 +266,23 @@ internal sealed class Updater
         }
     }
 
+    /// <summary>
+    /// Путь из архива или патча → путь в папке игры. Zip slip: вылезти за пределы папки установки нельзя.
+    /// </summary>
+    public static string ResolveInside(string installRoot, string relative)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(installRoot)) + Path.DirectorySeparatorChar;
+        var normalized = relative.Replace('/', Path.DirectorySeparatorChar);
+        var target = Path.GetFullPath(Path.Combine(root, normalized));
+
+        if (Path.IsPathRooted(normalized) || !target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException(Loc.BadArchivePath(relative));
+
+        return target;
+    }
+
     /// <summary>Файлы, которые нельзя трогать при распаковке и очистке.</summary>
-    private static HashSet<string> ProtectedPaths(LocalState state, string installRoot)
+    public static HashSet<string> ProtectedPaths(LocalState state, string installRoot)
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -347,7 +363,7 @@ internal sealed class Updater
     private static string StripRoot(string fullName, string? rootPrefix) =>
         rootPrefix is null ? fullName : fullName[(rootPrefix.Length + 1)..];
 
-    private static void EnsureFreeSpace(string path, long needed)
+    public static void EnsureFreeSpace(string path, long needed)
     {
         if (needed <= 0)
             return;
@@ -378,8 +394,7 @@ internal sealed class Updater
         // Запас в 256 МБ, чтобы не упереться в ноль на последнем файле.
         if (free < needed + (256L << 20))
         {
-            throw new IOException(
-                $"Недостаточно места на диске {root}. Нужно ~{Format.Bytes(needed)}, свободно {Format.Bytes(free)}.");
+            throw new IOException(Loc.NotEnoughSpace(root, Format.Bytes(needed), Format.Bytes(free)));
         }
     }
 }

@@ -12,6 +12,9 @@ internal sealed class MainForm : Form
     private readonly LocalState _state;
 
     private readonly Label _title = new();
+    private readonly Label _subtitle = new();
+    private readonly LinkLabel _langEn = new();
+    private readonly LinkLabel _langRu = new();
     private readonly Label _status = new();
     private readonly Label _detail = new();
     private readonly Label _versions = new();
@@ -27,20 +30,33 @@ internal sealed class MainForm : Form
     private bool _busy;
     private ActionMode _mode;
 
+    /// <summary>Что написано на кнопке, пока она заблокирована на время работы.</summary>
+    private ActionMode _buttonLabel;
+
+    /// <summary>
+    /// Тексты статуса хранятся функциями, а не строками: при переключении языка
+    /// всё, что сейчас на экране, перерисовывается на новом языке.
+    /// </summary>
+    private Func<string> _statusText = () => "";
+    private Color _statusColor = Theme.Text;
+    private Func<string> _detailText = () => "";
+
     /// <summary>Галочку выставляет код, а не игрок — ярлык трогать не надо.</summary>
     private bool _syncingShortcut;
 
-    public MainForm()
+    public MainForm(string launcherDir, LocalState state)
     {
-        _launcherDir = Path.GetDirectoryName(Environment.ProcessPath ?? Application.ExecutablePath)!;
-        _state = LocalState.Load(_launcherDir);
+        _launcherDir = launcherDir;
+        _state = state;
 
         BuildUi();
+        ApplyLanguage();
         SyncShortcutCheckbox();
-        UpdateLocationControls();
     }
 
     private string InstallDir => _state.InstallPath!;
+
+    private string CacheDir => Path.Combine(_launcherDir, "updates");
 
     private string GameExecutable =>
         Path.Combine(InstallDir, _manifest?.ExecutableOrDefault ?? Config.DefaultExecutable);
@@ -52,7 +68,6 @@ internal sealed class MainForm : Form
 
     private void BuildUi()
     {
-        Text = $"{Config.AppName} — лаунчер";
         ClientSize = new Size(560, 372);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
@@ -76,14 +91,15 @@ internal sealed class MainForm : Form
         _title.AutoSize = true;
         _title.Location = new Point(32, 34);
 
-        var subtitle = new Label
-        {
-            Text = "ЛАУНЧЕР",
-            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-            ForeColor = Theme.Accent,
-            AutoSize = true,
-            Location = new Point(35, 82),
-        };
+        _subtitle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+        _subtitle.ForeColor = Theme.Accent;
+        _subtitle.AutoSize = true;
+        _subtitle.Location = new Point(35, 82);
+
+        SetupLanguageLink(_langEn, "EN", Language.En);
+        SetupLanguageLink(_langRu, "RU", Language.Ru);
+        _langRu.Location = new Point(ClientSize.Width - 34 - _langRu.PreferredWidth, 22);
+        _langEn.Location = new Point(_langRu.Left - 4 - _langEn.PreferredWidth, 22);
 
         _versions.Font = new Font("Segoe UI", 8.5f);
         _versions.ForeColor = Theme.TextMuted;
@@ -104,7 +120,6 @@ internal sealed class MainForm : Form
         _path.Location = new Point(34, 159);
         _path.Width = 396;
 
-        _browse.Text = "Обзор…";
         _browse.Size = new Size(90, _path.Height + 2);
         _browse.Location = new Point(436, 158);
         _browse.FlatStyle = FlatStyle.Flat;
@@ -131,7 +146,6 @@ internal sealed class MainForm : Form
         _detail.Location = new Point(32, 252);
         _detail.Size = new Size(496, 20);
 
-        _action.Text = "ПРОВЕРКА…";
         _action.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
         _action.Size = new Size(200, 46);
         _action.Location = new Point(328, 302);
@@ -145,7 +159,6 @@ internal sealed class MainForm : Form
         _action.Cursor = Cursors.Hand;
         _action.Click += OnActionClick;
 
-        _shortcut.Text = "Создать ярлык игры на рабочем столе";
         _shortcut.Font = new Font("Segoe UI", 9f);
         _shortcut.ForeColor = Theme.Text;
         _shortcut.FlatStyle = FlatStyle.Flat;
@@ -156,19 +169,67 @@ internal sealed class MainForm : Form
         _shortcut.Cursor = Cursors.Hand;
         _shortcut.CheckedChanged += OnShortcutToggled;
 
-        _openFolder.Text = "Папка игры";
         _openFolder.Font = new Font("Segoe UI", 8.5f);
         _openFolder.LinkColor = Theme.TextMuted;
         _openFolder.ActiveLinkColor = Theme.Accent;
         _openFolder.LinkBehavior = LinkBehavior.HoverUnderline;
         _openFolder.AutoSize = true;
         _openFolder.Location = new Point(34, 332);
-        _openFolder.Click += (_, _) => OpenInstallFolder();
+        _openFolder.LinkClicked += (_, _) => OpenInstallFolder();
 
         Controls.AddRange([
-            _title, subtitle, _versions, _pathCaption, _path, _browse,
+            _title, _subtitle, _langEn, _langRu, _versions, _pathCaption, _path, _browse,
             _status, _progress, _detail, _action, _shortcut, _openFolder,
         ]);
+    }
+
+    private void SetupLanguageLink(LinkLabel link, string text, Language language)
+    {
+        link.Text = text;
+        link.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+        link.LinkBehavior = LinkBehavior.HoverUnderline;
+        link.ActiveLinkColor = Theme.Accent;
+        link.AutoSize = true;
+        link.TabStop = false;
+        link.LinkClicked += (_, _) => SwitchLanguage(language);
+    }
+
+    private void SwitchLanguage(Language language)
+    {
+        if (Loc.Current == language)
+            return;
+
+        Loc.Current = language;
+        _state.Language = Loc.Code(language);
+        TrySaveState();
+
+        ApplyLanguage();
+    }
+
+    /// <summary>Перерисовывает все тексты на текущем языке.</summary>
+    private void ApplyLanguage()
+    {
+        Text = Loc.WindowTitle;
+        _subtitle.Text = Loc.Subtitle;
+        _browse.Text = Loc.Browse;
+        _shortcut.Text = Loc.CreateShortcut;
+        _openFolder.Text = Loc.OpenGameFolder;
+
+        _langEn.LinkColor = Loc.Current == Language.En ? Theme.Text : Theme.TextMuted;
+        _langRu.LinkColor = Loc.Current == Language.Ru ? Theme.Text : Theme.TextMuted;
+
+        _action.Text = _buttonLabel switch
+        {
+            ActionMode.Install => Loc.ButtonInstall,
+            ActionMode.Play => Loc.ButtonPlay,
+            ActionMode.Retry => Loc.ButtonRetry,
+            _ => Loc.ButtonChecking,
+        };
+
+        _status.Text = _statusText();
+        _detail.Text = _detailText();
+        UpdateVersionsLabel();
+        UpdateLocationControls();
     }
 
     protected override void OnShown(EventArgs e)
@@ -179,7 +240,7 @@ internal sealed class MainForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        // Недокачанный архив остаётся как .part — при следующем запуске докачается.
+        // Недокачанный файл остаётся как .part — при следующем запуске докачается.
         _cts.Cancel();
         base.OnFormClosing(e);
     }
@@ -188,13 +249,16 @@ internal sealed class MainForm : Form
 
     private Task RunFlowAsync() => RunGuardedAsync(async () =>
     {
-        UpdateVersionsLabel(null);
-        SetStatus("Проверяем обновления…");
+        _manifest = null;
+        UpdateVersionsLabel();
+        SetStatus(() => Loc.CheckingUpdates);
         _progress.Indeterminate = true;
+
+        UpdateManifest manifest;
 
         try
         {
-            _manifest = await _updater.FetchManifestAsync(_cts.Token);
+            manifest = await _updater.FetchManifestAsync(_cts.Token);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -202,37 +266,41 @@ internal sealed class MainForm : Form
             return;
         }
 
-        UpdateVersionsLabel(_manifest);
+        _manifest = manifest;
+        UpdateVersionsLabel();
+
+        if (await TryUpdateLauncherAsync(manifest))
+            return;
 
         if (IsFreshInstall)
         {
             // Первая установка: ждём, пока игрок выберет папку и нажмёт «Установить».
             _progress.Indeterminate = false;
             _progress.Value = 0;
-            SetStatus("Выберите папку и нажмите «Установить»");
-            _detail.Text = SpaceHint();
+            SetStatus(() => Loc.ChooseFolderAndInstall);
+            SetDetail(SpaceHint);
             SetMode(ActionMode.Install);
             return;
         }
 
-        if (!NeedsUpdate(_manifest))
+        if (!NeedsUpdate(manifest))
         {
             _progress.Indeterminate = false;
             _progress.Value = 1;
-            SetStatus("Установлена последняя версия", Theme.Success);
+            SetStatus(() => Loc.UpToDate, Theme.Success);
             EnablePlay();
             return;
         }
 
-        await InstallAndFinishAsync(_manifest);
+        await InstallAndFinishAsync(manifest);
     });
 
     private Task RunInstallAsync()
     {
         if (!InstallLocation.CanWriteTo(InstallDir, out var error))
         {
-            SetStatus("В эту папку установить нельзя — выберите другую", Theme.Danger);
-            _detail.Text = error;
+            SetStatus(() => Loc.CantInstallHere, Theme.Danger);
+            SetDetail(() => error);
             return Task.CompletedTask;
         }
 
@@ -246,7 +314,7 @@ internal sealed class MainForm : Form
 
         _busy = true;
         SetMode(ActionMode.None);
-        _detail.Text = "";
+        SetDetail(() => "");
         UpdateLocationControls();
 
         try
@@ -270,71 +338,158 @@ internal sealed class MainForm : Form
 
     private async Task InstallAndFinishAsync(UpdateManifest manifest)
     {
-        await DownloadVerifyInstallAsync(manifest);
+        await UpdateGameAsync(manifest);
 
         _progress.Indeterminate = false;
         _progress.Value = 1;
-        SetStatus($"Версия {manifest.Version} установлена", Theme.Success);
-        _detail.Text = manifest.Notes ?? "";
-        UpdateVersionsLabel(manifest);
+        SetStatus(() => Loc.VersionInstalled(manifest.Version), Theme.Success);
+        SetDetail(() => manifest.LocalizedNotes ?? "");
+        UpdateVersionsLabel();
 
         if (_shortcut.Checked)
         {
-            SetStatus("Создаём ярлык на рабочем столе…");
+            SetStatus(() => Loc.CreatingShortcut);
             var error = await ApplyShortcutAsync();
-            SetStatus($"Версия {manifest.Version} установлена", Theme.Success);
+            SetStatus(() => Loc.VersionInstalled(manifest.Version), Theme.Success);
 
             if (error is not null)
-                _detail.Text = $"Ярлык не создан: {error}";
+                SetDetail(() => Loc.ShortcutFailed(error));
         }
 
         EnablePlay();
     }
 
-    /// <summary>Скачать, сверить хеш и распаковать. При битом хеше — одна повторная попытка с нуля.</summary>
+    /// <summary>
+    /// Есть патч с установленной версии — качаем только его. Не подошёл (игрок пропустил много версий,
+    /// файлы игры изменены или повреждены) — откатываемся на полный архив, как раньше.
+    /// </summary>
+    private async Task UpdateGameAsync(UpdateManifest manifest)
+    {
+        var patch = !_state.UpdateInProgress && File.Exists(GameExecutable)
+            ? manifest.PatchFrom(_state.Version)
+            : null;
+
+        if (patch is not null)
+        {
+            try
+            {
+                await ApplyPatchAsync(manifest, patch);
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                SetStatus(() => Loc.PatchFallback, Theme.Danger);
+                SetDetail(() => Short(ex));
+                await Task.Delay(1500, _cts.Token);
+            }
+        }
+
+        await DownloadVerifyInstallAsync(manifest);
+    }
+
+    private async Task ApplyPatchAsync(UpdateManifest manifest, PatchInfo patch)
+    {
+        string? patchPath = null;
+
+        try
+        {
+            if (patch.HasData)
+            {
+                patchPath = Path.Combine(CacheDir, FileNameFor(patch.Url, $"patch-{patch.From}-{manifest.Version}.hdiff"));
+                await DownloadVerifiedAsync(patch, patchPath, () => Loc.DownloadingPatch(manifest.Version));
+            }
+
+            SetStatus(() => Loc.ApplyingPatch(manifest.Version));
+            SetDetail(() => "");
+            await Patcher.ApplyAsync(patchPath, patch, InstallDir, manifest, _state, new Progress<ProgressInfo>(OnProgress), _cts.Token);
+        }
+        finally
+        {
+            // Патч подходит только к одной версии — хранить его незачем, даже если не встал.
+            if (patchPath is not null && !_cts.IsCancellationRequested)
+                TryDelete(patchPath);
+        }
+    }
+
+    /// <summary>Скачать полный архив, сверить хеш и распаковать.</summary>
     private async Task DownloadVerifyInstallAsync(UpdateManifest manifest)
     {
-        var cacheDir = Path.Combine(_launcherDir, "updates");
-        var zipPath = Path.Combine(cacheDir, FileNameFor(manifest));
+        var zipPath = Path.Combine(CacheDir, FileNameFor(manifest.Url, $"update-{manifest.Version}.zip"));
+
+        await DownloadVerifiedAsync(manifest, zipPath, () => Loc.Downloading(manifest.Version));
+
+        SetStatus(() => Loc.Installing(manifest.Version));
+        SetDetail(() => "");
+        await Updater.InstallAsync(zipPath, InstallDir, manifest, _state, new Progress<ProgressInfo>(OnProgress), _cts.Token);
+
+        // Архив больше не нужен — освобождаем место.
+        TryDelete(zipPath);
+    }
+
+    /// <summary>Скачать файл и сверить SHA-256. При битом хеше — одна повторная попытка с нуля.</summary>
+    private async Task DownloadVerifiedAsync(IRemoteFile file, string path, Func<string> downloadingText)
+    {
+        var reporter = new Progress<ProgressInfo>(OnProgress);
 
         for (var attempt = 1; ; attempt++)
         {
-            var reporter = new Progress<ProgressInfo>(OnProgress);
-
-            if (NeedsDownload(zipPath, manifest))
+            if (NeedsDownload(path, file))
             {
-                SetStatus($"Скачиваем обновление {manifest.Version}…");
-                await _updater.DownloadAsync(manifest, zipPath, reporter, _cts.Token);
+                SetStatus(downloadingText);
+                await _updater.DownloadAsync(file, path, reporter, _cts.Token);
             }
 
-            if (!string.IsNullOrWhiteSpace(manifest.Sha256))
-            {
-                SetStatus("Проверяем архив…");
-                _detail.Text = "";
+            if (string.IsNullOrWhiteSpace(file.Sha256))
+                return;
 
-                var actual = await Updater.ComputeSha256Async(zipPath, reporter, _cts.Token);
-                if (!string.Equals(actual, manifest.Sha256.Trim(), StringComparison.OrdinalIgnoreCase))
-                {
-                    TryDelete(zipPath);
+            SetStatus(() => Loc.Verifying);
+            SetDetail(() => "");
 
-                    if (attempt >= 2)
-                        throw new InvalidDataException(
-                            "Скачанный архив повреждён (не совпадает контрольная сумма). Попробуйте позже.");
+            var actual = await Updater.ComputeSha256Async(path, reporter, _cts.Token);
+            if (string.Equals(actual, file.Sha256.Trim(), StringComparison.OrdinalIgnoreCase))
+                return;
 
-                    SetStatus("Архив повреждён, качаем заново…", Theme.Danger);
-                    continue;
-                }
-            }
+            TryDelete(path);
 
-            SetStatus($"Устанавливаем {manifest.Version}…");
-            _detail.Text = "";
-            await Updater.InstallAsync(zipPath, InstallDir, manifest, _state, reporter, _cts.Token);
+            if (attempt >= 2)
+                throw new InvalidDataException(Loc.CorruptedFinal);
 
-            // Архив больше не нужен — освобождаем место.
-            TryDelete(zipPath);
-            return;
+            SetStatus(() => Loc.Corrupted, Theme.Danger);
         }
     }
+
+    // ---------------------------------------------------------------- самообновление
+
+    /// <summary>
+    /// Если в манифесте лежит лаунчер новее нашего — ставим его и перезапускаемся.
+    /// Любая неудача здесь не мешает играть: просто продолжаем на текущем лаунчере.
+    /// </summary>
+    private async Task<bool> TryUpdateLauncherAsync(UpdateManifest manifest)
+    {
+        if (SelfUpdate.JustUpdated || !SelfUpdate.IsNewer(manifest.Launcher))
+            return false;
+
+        try
+        {
+            var newExe = SelfUpdate.DownloadPath;
+            await DownloadVerifiedAsync(manifest.Launcher!, newExe, () => Loc.UpdatingLauncher);
+
+            SetStatus(() => Loc.RestartingLauncher);
+            SelfUpdate.ReplaceAndRestart(newExe);
+
+            BeginInvoke(Close);
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            TryDelete(SelfUpdate.DownloadPath);
+            _progress.Indeterminate = true;
+            SetDetail(() => "");
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------- прогресс
 
     private bool NeedsUpdate(UpdateManifest manifest)
     {
@@ -347,34 +502,40 @@ internal sealed class MainForm : Form
         return !string.Equals(_state.Version, manifest.Version, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool NeedsDownload(string zipPath, UpdateManifest manifest)
+    private static bool NeedsDownload(string path, IRemoteFile file)
     {
-        if (!File.Exists(zipPath))
+        if (!File.Exists(path))
             return true;
 
-        // Целый архив с нужным размером мог остаться с прошлого оборванного запуска.
-        return manifest.Size > 0 && new FileInfo(zipPath).Length != manifest.Size;
+        // Целый файл с нужным размером мог остаться с прошлого оборванного запуска.
+        return file.Size > 0 && new FileInfo(path).Length != file.Size;
     }
 
     private void OnProgress(ProgressInfo p)
     {
         _progress.Indeterminate = false;
         _progress.Value = p.Total > 0 ? (double)p.Done / p.Total : 0;
+        SetDetail(() => ProgressDetail(p));
+    }
 
-        var percent = p.Total > 0 ? $"{p.Done * 100 / p.Total}%" : "";
+    private static string ProgressDetail(ProgressInfo p)
+    {
+        var percent = p.Total > 0 ? $"{Math.Min(p.Done * 100 / p.Total, 100)}%" : "";
+        var ofTotal = Loc.Of(Format.Bytes(p.Done), Format.Bytes(p.Total));
 
-        _detail.Text = p.Stage switch
+        return p.Stage switch
         {
-            "download" => DownloadDetail(p, percent),
-            "verify" => $"Проверка целостности   {percent}",
-            "install" => $"Распаковка   {Format.Bytes(p.Done)} из {Format.Bytes(p.Total)}   {percent}",
+            "download" => DownloadDetail(p, ofTotal, percent),
+            "verify" => Loc.IntegrityCheck(percent),
+            "install" => Loc.Unpacking(ofTotal, percent),
+            "patch" => Loc.Patching(ofTotal, percent),
             _ => "",
         };
     }
 
-    private static string DownloadDetail(ProgressInfo p, string percent)
+    private static string DownloadDetail(ProgressInfo p, string ofTotal, string percent)
     {
-        var parts = new List<string> { $"{Format.Bytes(p.Done)} из {Format.Bytes(p.Total)}", percent };
+        var parts = new List<string> { ofTotal, percent };
 
         if (p.BytesPerSecond is { } speed)
         {
@@ -382,7 +543,7 @@ internal sealed class MainForm : Form
 
             var eta = Format.Eta(p.Total - p.Done, speed);
             if (eta.Length > 0)
-                parts.Add($"осталось {eta}");
+                parts.Add(Loc.Left(eta));
         }
 
         return string.Join("   ", parts.Where(x => x.Length > 0));
@@ -394,7 +555,7 @@ internal sealed class MainForm : Form
     {
         using var dialog = new FolderBrowserDialog
         {
-            Description = $"Куда установить {Config.AppName}",
+            Description = Loc.FolderPickerTitle,
             UseDescriptionForTitle = true,
             ShowNewFolderButton = true,
             SelectedPath = InstallLocation.ExistingAncestor(InstallDir) ?? "",
@@ -407,8 +568,8 @@ internal sealed class MainForm : Form
 
         if (!InstallLocation.CanWriteTo(target, out var error))
         {
-            SetStatus("В эту папку установить нельзя — выберите другую", Theme.Danger);
-            _detail.Text = error;
+            SetStatus(() => Loc.CantInstallHere, Theme.Danger);
+            SetDetail(() => error);
             return;
         }
 
@@ -425,8 +586,8 @@ internal sealed class MainForm : Form
             return;
         }
 
-        SetStatus("Выберите папку и нажмите «Установить»");
-        _detail.Text = SpaceHint();
+        SetStatus(() => Loc.ChooseFolderAndInstall);
+        SetDetail(SpaceHint);
 
         if (_manifest is not null)
             SetMode(ActionMode.Install);
@@ -436,7 +597,7 @@ internal sealed class MainForm : Form
     {
         var canChoose = !_busy && IsFreshInstall;
 
-        _pathCaption.Text = IsFreshInstall ? "Папка установки" : "Игра установлена в";
+        _pathCaption.Text = IsFreshInstall ? Loc.InstallFolder : Loc.InstalledIn;
         _path.Text = InstallDir;
         _path.Width = canChoose ? 396 : 492;
         _browse.Visible = canChoose;
@@ -448,10 +609,10 @@ internal sealed class MainForm : Form
         var parts = new List<string>();
 
         if (_manifest is { Size: > 0 })
-            parts.Add($"Размер загрузки: {Format.Bytes(_manifest.Size)}");
+            parts.Add(Loc.DownloadSize(Format.Bytes(_manifest.Size)));
 
         if (InstallLocation.FreeSpace(InstallDir) is { } free)
-            parts.Add($"Свободно на диске {Path.GetPathRoot(Path.GetFullPath(InstallDir))}: {Format.Bytes(free)}");
+            parts.Add(Loc.FreeOnDisk(Path.GetPathRoot(Path.GetFullPath(InstallDir)) ?? "", Format.Bytes(free)));
 
         return string.Join("   ·   ", parts);
     }
@@ -482,10 +643,11 @@ internal sealed class MainForm : Form
             return;
 
         var error = await ApplyShortcutAsync();
+        var created = _shortcut.Checked;
 
-        _detail.Text = error is not null
-            ? $"Ярлык: {error}"
-            : _shortcut.Checked ? "Ярлык создан на рабочем столе" : "Ярлык удалён с рабочего стола";
+        SetDetail(() => error is not null
+            ? Loc.ShortcutError(error)
+            : created ? Loc.ShortcutCreated : Loc.ShortcutRemoved);
     }
 
     /// <summary>Создаёт или удаляет ярлык по галочке. Возвращает текст ошибки или null.</summary>
@@ -522,7 +684,7 @@ internal sealed class MainForm : Form
     /// </summary>
     private string EnsureLauncherInInstallDir()
     {
-        var self = Path.GetFullPath(Environment.ProcessPath ?? Application.ExecutablePath);
+        var self = SelfUpdate.SelfPath;
 
         if (string.Equals(
                 Path.GetDirectoryName(self),
@@ -550,21 +712,21 @@ internal sealed class MainForm : Form
         if (installed)
         {
             _progress.Value = 1;
-            SetStatus("Нет связи с сервером обновлений — играем на текущей версии", Theme.TextMuted);
-            _detail.Text = Short(ex);
+            SetStatus(() => Loc.Offline, Theme.TextMuted);
+            SetDetail(() => Short(ex));
             EnablePlay();
             return;
         }
 
-        Fail(ex, "Не удалось получить список версий. Проверьте интернет.");
+        Fail(ex, () => Loc.ManifestFailed);
     }
 
-    private void Fail(Exception ex, string? headline = null)
+    private void Fail(Exception ex, Func<string>? headline = null)
     {
         _progress.Indeterminate = false;
         _progress.Value = 0;
-        SetStatus(headline ?? "Ошибка обновления", Theme.Danger);
-        _detail.Text = Short(ex);
+        SetStatus(headline ?? (() => Loc.UpdateError), Theme.Danger);
+        SetDetail(() => Short(ex));
         SetMode(ActionMode.Retry);
     }
 
@@ -579,17 +741,11 @@ internal sealed class MainForm : Form
         _mode = mode;
         _action.Enabled = mode != ActionMode.None;
 
-        switch (mode)
+        // На время работы кнопка гаснет, но надпись остаётся прежней.
+        if (mode != ActionMode.None)
         {
-            case ActionMode.Install:
-                _action.Text = "УСТАНОВИТЬ";
-                break;
-            case ActionMode.Play:
-                _action.Text = "ИГРАТЬ";
-                break;
-            case ActionMode.Retry:
-                _action.Text = "ПОВТОРИТЬ";
-                break;
+            _buttonLabel = mode;
+            ApplyLanguage();
         }
 
         if (_action.Enabled)
@@ -618,7 +774,7 @@ internal sealed class MainForm : Form
 
         if (!File.Exists(exe))
         {
-            SetStatus("Файл игры не найден — переустанавливаем", Theme.Danger);
+            SetStatus(() => Loc.GameMissing, Theme.Danger);
             _state.Version = null;
             _state.Save();
             _ = RunFlowAsync();
@@ -637,24 +793,32 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            Fail(ex, "Не удалось запустить игру");
+            Fail(ex, () => Loc.LaunchFailed);
         }
     }
 
     // ---------------------------------------------------------------- мелочи
 
-    private void SetStatus(string text, Color? color = null)
+    private void SetStatus(Func<string> text, Color? color = null)
     {
-        _status.Text = text;
-        _status.ForeColor = color ?? Theme.Text;
+        _statusText = text;
+        _statusColor = color ?? Theme.Text;
+        _status.Text = text();
+        _status.ForeColor = _statusColor;
     }
 
-    private void UpdateVersionsLabel(UpdateManifest? manifest)
+    private void SetDetail(Func<string> text)
     {
-        var installed = string.IsNullOrWhiteSpace(_state.Version) ? "не установлена" : _state.Version;
-        _versions.Text = manifest is null
-            ? $"Установлено: {installed}"
-            : $"Установлено: {installed}      Доступно: {manifest.Version}";
+        _detailText = text;
+        _detail.Text = text();
+    }
+
+    private void UpdateVersionsLabel()
+    {
+        var installed = string.IsNullOrWhiteSpace(_state.Version) ? Loc.NotInstalled : _state.Version;
+        _versions.Text = _manifest is null
+            ? Loc.Installed(installed)
+            : $"{Loc.Installed(installed)}      {Loc.Available(_manifest.Version)}";
     }
 
     private void OpenInstallFolder()
@@ -668,7 +832,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            _detail.Text = Short(ex);
+            SetDetail(() => Short(ex));
         }
     }
 
@@ -684,10 +848,10 @@ internal sealed class MainForm : Form
         }
     }
 
-    private static string FileNameFor(UpdateManifest manifest)
+    private static string FileNameFor(string url, string fallback)
     {
-        var fromUrl = Path.GetFileName(new Uri(manifest.Url).LocalPath);
-        return string.IsNullOrWhiteSpace(fromUrl) ? $"update-{manifest.Version}.zip" : fromUrl;
+        var fromUrl = Uri.TryCreate(url, UriKind.Absolute, out var uri) ? Path.GetFileName(uri.LocalPath) : "";
+        return string.IsNullOrWhiteSpace(fromUrl) ? fallback : fromUrl;
     }
 
     private static void TryDelete(string path)
@@ -704,7 +868,7 @@ internal sealed class MainForm : Form
     }
 
     private static string Short(Exception ex) =>
-        ex is HttpRequestException ? $"Сеть: {ex.Message}" : ex.Message;
+        ex is HttpRequestException ? Loc.Network(ex.Message) : ex.Message;
 
     protected override void Dispose(bool disposing)
     {

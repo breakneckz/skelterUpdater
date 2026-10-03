@@ -7,9 +7,7 @@ namespace SkelterLauncher;
 /// <summary>Ярлык игры на рабочем столе. Пишется через штатный IShellLink — без WScript и PowerShell.</summary>
 internal static class Shortcut
 {
-    public static string DesktopPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-        $"{Config.AppName}.lnk");
+    public static string DesktopPath => Path.Combine(Config.DesktopDir, $"{Config.AppName}.lnk");
 
     public static bool Exists => File.Exists(DesktopPath);
 

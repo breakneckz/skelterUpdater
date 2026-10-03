@@ -38,7 +38,7 @@ internal static class InstallLocation
         var probeDir = ExistingAncestor(path);
         if (probeDir is null)
         {
-            error = "Диск недоступен.";
+            error = Loc.DriveUnavailable;
             return false;
         }
 
@@ -54,7 +54,7 @@ internal static class InstallLocation
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
             error = ex is UnauthorizedAccessException
-                ? $"Нет прав на запись в {probeDir}. Выберите папку вне Program Files."
+                ? Loc.NoWriteAccess(probeDir)
                 : ex.Message;
             return false;
         }
